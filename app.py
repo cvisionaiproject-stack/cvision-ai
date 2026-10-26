@@ -1,917 +1,613 @@
 
 import re
-
+import html
 import streamlit as st
 import fitz
 import plotly.graph_objects as go
+
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 
 
-# ==================================================
-# 1. PAGE CONFIG
-# ==================================================
+# =========================================================
+# 1. CẤU HÌNH TRANG
+# =========================================================
 st.set_page_config(
-    page_title="CVision AI | Your Career Companion",
-    page_icon="✨",
+    page_title="CVision AI | Phân tích CV",
+    page_icon="📄",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="expanded"
 )
 
 
-# ==================================================
-# 2. GEN Z DESIGN SYSTEM
-# ==================================================
+# =========================================================
+# 2. GIAO DIỆN TIẾNG VIỆT - PHONG CÁCH PASTEL
+# =========================================================
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
-
-:root {
-    --ink: #282743;
-    --muted: #77768F;
-    --purple: #7967E8;
-    --mint: #DDF8EC;
-    --lavender: #F2EEFF;
-    --sky: #E5F2FF;
-    --peach: #FFF0E8;
-    --white: #FFFFFF;
-}
+@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap');
 
 html, body, [class*="css"] {
-    font-family: 'DM Sans', sans-serif;
+    font-family: 'Be Vietnam Pro', sans-serif;
 }
 
 .stApp {
-    background: #FAF9FF;
-    color: var(--ink);
+    background: linear-gradient(135deg, #FAF9FF 0%, #F1FBF8 55%, #F4F8FF 100%);
+    color: #26324A;
 }
 
-[data-testid="stHeader"] {
-    background: rgba(250, 249, 255, 0.9);
-}
-
-.block-container {
-    padding-top: 2rem;
-    padding-bottom: 3rem;
-    max-width: 1450px;
-}
-
-/* Sidebar */
 [data-testid="stSidebar"] {
-    background: #F0EDFF;
-    border-right: 1px solid #E5E0FA;
-}
-
-[data-testid="stSidebar"] > div {
-    padding-top: 1.5rem;
-}
-
-.brand {
-    font-size: 25px;
-    font-weight: 800;
-    color: #5143B5;
-    letter-spacing: -1px;
-}
-
-.brand-sub {
-    color: #77708F;
-    font-size: 12px;
-    letter-spacing: 1.5px;
-    font-weight: 700;
-}
-
-.side-note {
-    background: white;
-    border: 1px solid #E7E1FA;
-    border-radius: 16px;
-    padding: 16px;
-    margin-top: 20px;
-    color: #57536F;
-    font-size: 13px;
-    line-height: 1.8;
-}
-
-/* Hero */
-.hero {
-    background: linear-gradient(
-        120deg, #EDE7FF 0%, #E1F8F0 60%, #E5F1FF 100%
-    );
-    border: 1px solid #E8E4F8;
-    border-radius: 25px;
-    padding: 32px;
-    margin-bottom: 24px;
-}
-
-.eyebrow {
-    color: #7160D1;
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    font-size: 11px;
-    font-weight: 800;
-}
-
-.hero h1 {
-    color: #282743;
-    font-size: clamp(30px, 4vw, 43px);
-    font-weight: 800;
-    letter-spacing: -1.7px;
-    line-height: 1.15;
-    margin: 12px 0;
-}
-
-.hero p {
-    color: #66647F;
-    font-size: 15px;
-    line-height: 1.8;
-    max-width: 700px;
-}
-
-.pill {
-    display: inline-block;
-    background: white;
-    color: #5D50B7;
-    border: 1px solid #DED7FF;
-    padding: 7px 12px;
-    border-radius: 30px;
-    font-size: 12px;
-    font-weight: 700;
-}
-
-/* Section headings */
-.section-heading {
-    font-size: 21px;
-    font-weight: 800;
-    color: #302D4D;
-    margin: 8px 0 5px;
-    letter-spacing: -0.5px;
-}
-
-.section-caption {
-    color: #828098;
-    font-size: 13px;
-    margin-bottom: 16px;
-}
-
-/* Cards */
-div[data-testid="stVerticalBlockBorderWrapper"] {
-    background: white;
-    border: 1px solid #EAE7F4;
-    border-radius: 20px;
-}
-
-.metric-card {
-    background: white;
-    border: 1px solid #E9E5F5;
-    border-radius: 18px;
-    padding: 20px;
-    min-height: 126px;
-}
-
-.metric-icon {
-    font-size: 21px;
-}
-
-.metric-label {
-    color: #817F99;
-    font-size: 12px;
-    margin-top: 8px;
-}
-
-.metric-value {
-    color: #302D4D;
-    font-size: 30px;
-    font-weight: 800;
-    margin-top: 5px;
-}
-
-.mini-card {
-    background: #F7F5FF;
-    border: 1px solid #EAE5FF;
-    border-radius: 14px;
-    padding: 15px;
-    margin: 8px 0;
-}
-
-.mini-card p {
-    color: #5E597B;
-    font-size: 13px;
-    line-height: 1.7;
-    margin-bottom: 0;
-}
-
-.skill-tag {
-    display: inline-block;
-    background: #E4F8EF;
-    color: #247956;
-    border: 1px solid #C8EEDF;
-    border-radius: 30px;
-    padding: 7px 12px;
-    margin: 4px 5px 4px 0;
-    font-size: 12px;
-    font-weight: 700;
-}
-
-.missing-tag {
-    display: inline-block;
-    background: #FFF0E8;
-    color: #A45637;
-    border: 1px solid #F9DACA;
-    border-radius: 30px;
-    padding: 7px 12px;
-    margin: 4px 5px 4px 0;
-    font-size: 12px;
-    font-weight: 700;
-}
-
-/* Inputs */
-.stTextInput input, .stTextArea textarea {
     background: #FFFFFF;
-    border: 1px solid #E1DDF0;
-    border-radius: 12px;
-    color: #302D4D;
+    border-right: 1px solid #E9E7F5;
 }
 
-.stTextInput input:focus, .stTextArea textarea:focus {
-    border-color: #9585F0;
-    box-shadow: 0 0 0 2px #EDE8FF;
-}
-
-[data-testid="stFileUploader"] {
-    background: #F8F6FF;
-    border: 1.5px dashed #B7A9F4;
-    border-radius: 15px;
-    padding: 12px;
-}
-
-/* Buttons */
-.stButton > button {
-    background: #7967E8;
-    color: white;
-    border: 1px solid #7967E8;
-    border-radius: 12px;
-    font-weight: 700;
-    min-height: 46px;
-    transition: all .2s ease;
-}
-
-.stButton > button:hover {
-    background: #6552D4;
-    color: white;
-    border-color: #6552D4;
-    transform: translateY(-1px);
-}
-
-/* Tabs */
-.stTabs [data-baseweb="tab-list"] {
-    gap: 8px;
-    background: #F0EDFA;
-    border-radius: 13px;
-    padding: 6px;
-}
-
-.stTabs [data-baseweb="tab"] {
-    border-radius: 9px;
-    color: #67637F;
-    font-weight: 600;
-}
-
-.stTabs [aria-selected="true"] {
-    background: white !important;
-    color: #6251CF !important;
-}
-
-/* Footer */
-.footer {
-    border-top: 1px solid #EAE6F5;
-    margin-top: 35px;
-    padding-top: 18px;
-    color: #89869F;
-    font-size: 12px;
-    text-align: center;
+[data-testid="stSidebar"] h1 {
+    color: #7161C5;
 }
 
 h1, h2, h3 {
-    color: #302D4D;
+    color: #303653;
+    font-weight: 800;
 }
 
-[data-testid="stAlert"] {
+p, label, .stMarkdown {
+    color: #46516B;
+}
+
+div.stButton > button {
+    background: linear-gradient(90deg, #8777DF, #6ECDBA);
+    color: white;
+    border: none;
     border-radius: 12px;
+    padding: 0.65rem 1.2rem;
+    font-weight: 700;
+    min-height: 45px;
 }
 
-@media (max-width: 768px) {
-    .hero {
-        padding: 22px;
-    }
-    .block-container {
-        padding-left: 1rem;
-        padding-right: 1rem;
-    }
+div.stButton > button:hover {
+    color: white;
+    border: 1px solid #8777DF;
+    filter: brightness(1.04);
+}
+
+div[data-testid="stMetric"] {
+    background: white;
+    border: 1px solid #E9E7F5;
+    border-radius: 16px;
+    padding: 18px;
+    box-shadow: 0 4px 18px rgba(70, 70, 120, 0.05);
+}
+
+div[data-testid="stFileUploader"] {
+    background: #FFFFFF;
+    border: 1px dashed #B7ADEB;
+    border-radius: 14px;
+    padding: 12px;
+}
+
+textarea, input {
+    border-radius: 10px !important;
+}
+
+.cv-card {
+    background: white;
+    border: 1px solid #E8E5F4;
+    border-radius: 18px;
+    padding: 22px;
+    margin: 8px 0 16px 0;
+    box-shadow: 0 5px 20px rgba(60, 60, 100, 0.04);
+}
+
+.hero {
+    background: linear-gradient(115deg, #EAE5FF, #DDF7F0, #E4EEFF);
+    border-radius: 22px;
+    padding: 28px;
+    margin-bottom: 22px;
+}
+
+.hero h1 {
+    color: #39345F;
+    margin-bottom: 8px;
+}
+
+.hero p {
+    color: #535B78;
+    margin-bottom: 0;
+}
+
+.skill-good {
+    display: inline-block;
+    background: #DDF7E9;
+    color: #176B49;
+    padding: 7px 11px;
+    border-radius: 20px;
+    margin: 4px;
+    font-size: 13px;
+}
+
+.skill-missing {
+    display: inline-block;
+    background: #FFE9E5;
+    color: #A33C37;
+    padding: 7px 11px;
+    border-radius: 20px;
+    margin: 4px;
+    font-size: 13px;
+}
+
+.small-note {
+    color: #737C91;
+    font-size: 13px;
+}
+
+hr {
+    border-color: #E7E5F1;
 }
 </style>
 """, unsafe_allow_html=True)
 
 
-# ==================================================
-# 3. SKILL DICTIONARY
-# ==================================================
-SKILLS = {
-    "Python": ["python"],
-    "SQL": ["sql", "mysql", "postgresql", "sqlite"],
-    "Excel": ["excel", "spreadsheet"],
-    "Power BI": ["power bi", "powerbi"],
-    "Tableau": ["tableau"],
-    "Machine Learning": ["machine learning", "hoc may", "học máy"],
-    "Deep Learning": ["deep learning", "hoc sau", "học sâu"],
-    "Data Analysis": [
-        "data analysis", "data analytics",
-        "phan tich du lieu", "phân tích dữ liệu"
-    ],
-    "Statistics": ["statistics", "thong ke", "thống kê"],
-    "Communication": [
-        "communication", "giao tiep", "giao tiếp"
-    ],
-    "Teamwork": ["teamwork", "team work", "lam viec nhom", "làm việc nhóm"],
-    "Problem Solving": [
-        "problem solving", "giai quyet van de",
-        "giải quyết vấn đề"
-    ],
-    "Project Management": [
-        "project management", "quan ly du an", "quản lý dự án"
-    ],
-    "Marketing": ["marketing", "tiep thi", "tiếp thị"],
-    "SEO": ["seo", "search engine optimization"],
-    "Content Writing": [
-        "content writing", "copywriting", "viet noi dung", "viết nội dung"
-    ],
-    "Pandas": ["pandas"],
-    "NumPy": ["numpy"],
-    "Data Visualization": [
-        "data visualization", "truc quan hoa du lieu",
-        "trực quan hóa dữ liệu"
-    ],
-    "Artificial Intelligence": [
-        "artificial intelligence", "tri tue nhan tao",
-        "trí tuệ nhân tạo"
-    ],
-    "Leadership": ["leadership", "lanh dao", "lãnh đạo"],
-    "English": ["english", "tieng anh", "tiếng anh"],
-    "Customer Service": [
-        "customer service", "cham soc khach hang",
-        "chăm sóc khách hàng"
-    ],
-    "Sales": ["sales", "ban hang", "bán hàng"],
-}
-
-
-# ==================================================
-# 4. TEXT PROCESSING
-# ==================================================
-def extract_pdf_text(file_bytes):
-    parts = []
-
-    with fitz.open(stream=file_bytes, filetype="pdf") as pdf:
-        for page in pdf:
-            parts.append(page.get_text())
-
-    return "\n".join(parts).strip()
-
-
-def normalize_text(text):
-    return re.sub(r"\s+", " ", text.lower()).strip()
-
-
-def extract_skills(text):
-    text = normalize_text(text)
-    found = []
-
-    for skill, aliases in SKILLS.items():
-        for alias in aliases:
-            pattern = (
-                r"(?<!\w)" + re.escape(alias.lower()) + r"(?!\w)"
-            )
-            if re.search(pattern, text):
-                found.append(skill)
-                break
-
-    return sorted(set(found))
-
-
-# ==================================================
-# 5. AI MODEL
-# ==================================================
-@st.cache_resource(show_spinner=False)
+# =========================================================
+# 3. TẢI MÔ HÌNH AI
+# =========================================================
+@st.cache_resource
 def load_model():
     return SentenceTransformer(
-        "sentence-transformers/"
-        "paraphrase-multilingual-MiniLM-L12-v2"
+        "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
     )
 
 
-def analyze_match(cv_text, job_text):
-    model = load_model()
+# =========================================================
+# 4. HÀM ĐỌC NỘI DUNG TỪ CV PDF
+# =========================================================
+def extract_pdf_text(uploaded_file):
+    try:
+        pdf_bytes = uploaded_file.getvalue()
+        text_parts = []
 
+        with fitz.open(stream=pdf_bytes, filetype="pdf") as pdf:
+            for page in pdf:
+                text_parts.append(page.get_text("text"))
+
+        return "\n".join(text_parts).strip()
+
+    except Exception as error:
+        st.error("Không thể đọc tệp PDF. Vui lòng thử một tệp khác.")
+        return ""
+
+
+# =========================================================
+# 5. DANH SÁCH KỸ NĂNG PHỔ BIẾN
+# =========================================================
+SKILL_GROUPS = {
+    "Python": ["python"],
+    "SQL": ["sql", "mysql", "postgresql", "postgres"],
+    "Excel": ["excel", "spreadsheet"],
+    "Power BI": ["power bi"],
+    "Tableau": ["tableau"],
+    "Phân tích dữ liệu": ["data analysis", "data analytics", "phân tích dữ liệu"],
+    "Trực quan hóa dữ liệu": ["data visualization", "trực quan hóa dữ liệu"],
+    "Thống kê": ["statistics", "statistical analysis", "thống kê"],
+    "Machine Learning": ["machine learning", "học máy"],
+    "Deep Learning": ["deep learning", "học sâu"],
+    "NLP": ["nlp", "natural language processing", "xử lý ngôn ngữ tự nhiên"],
+    "AI": ["artificial intelligence", "trí tuệ nhân tạo"],
+    "Marketing": ["marketing", "digital marketing", "tiếp thị"],
+    "SEO": ["seo", "search engine optimization"],
+    "Google Analytics": ["google analytics", "ga4"],
+    "Quản lý mạng xã hội": ["social media", "quản lý mạng xã hội"],
+    "Content Marketing": ["content marketing", "sáng tạo nội dung"],
+    "Giao tiếp": ["communication", "giao tiếp"],
+    "Làm việc nhóm": ["teamwork", "team work", "làm việc nhóm"],
+    "Quản lý dự án": ["project management", "quản lý dự án"],
+    "Quản lý thời gian": ["time management", "quản lý thời gian"],
+    "PowerPoint": ["powerpoint"],
+    "Word": ["microsoft word"],
+    "Quản trị kinh doanh": ["business administration", "quản trị kinh doanh"],
+    "Tài chính": ["finance", "financial analysis", "tài chính"],
+    "Kế toán": ["accounting", "kế toán"],
+    "Thiết kế": ["graphic design", "thiết kế đồ họa"],
+    "Figma": ["figma"],
+    "Canva": ["canva"],
+    "Java": ["java"],
+    "JavaScript": ["javascript"],
+    "HTML/CSS": ["html", "css"],
+    "C++": ["c++"],
+    "Git": ["git", "github"],
+    "Tiếng Anh": ["english", "tiếng anh", "ielts", "toeic"],
+}
+
+
+def find_skills(text):
+    normalized = text.lower()
+    found = []
+
+    for skill, keywords in SKILL_GROUPS.items():
+        for keyword in keywords:
+            pattern = r"(?<![a-z0-9])" + re.escape(keyword.lower()) + r"(?![a-z0-9])"
+            if re.search(pattern, normalized):
+                found.append(skill)
+                break
+
+    return found
+
+
+# =========================================================
+# 6. PHÂN TÍCH CV VỚI MÔ TẢ CÔNG VIỆC
+# =========================================================
+def analyze_cv(model, cv_text, job_text):
     embeddings = model.encode(
         [cv_text, job_text],
+        convert_to_numpy=True,
         normalize_embeddings=True
     )
 
     similarity = float(
         cosine_similarity(
-            [embeddings[0]], [embeddings[1]]
+            embeddings[0].reshape(1, -1),
+            embeddings[1].reshape(1, -1)
         )[0][0]
     )
 
-    # Similarity score, not probability of being hired
-    score = round(max(0, min(100, similarity * 100)))
+    # Chuyển độ tương đồng cosine về thang điểm 0–100.
+    # Đây là điểm tham khảo của ứng dụng, không phải xác suất trúng tuyển.
+    match_score = max(0, min(100, round(similarity * 100)))
 
-    cv_skills = extract_skills(cv_text)
-    job_skills = extract_skills(job_text)
+    cv_skills = find_skills(cv_text)
+    job_skills = find_skills(job_text)
 
-    matched = sorted(set(cv_skills) & set(job_skills))
-    missing = sorted(set(job_skills) - set(cv_skills))
+    matched = [skill for skill in job_skills if skill in cv_skills]
+    missing = [skill for skill in job_skills if skill not in cv_skills]
 
-    coverage = (
-        round(len(matched) / len(job_skills) * 100)
-        if job_skills else None
-    )
+    if not job_skills:
+        skill_coverage = None
+    else:
+        skill_coverage = round(len(matched) / len(job_skills) * 100)
 
     return {
-        "score": score,
+        "score": match_score,
         "cv_skills": cv_skills,
         "job_skills": job_skills,
         "matched": matched,
         "missing": missing,
-        "coverage": coverage,
+        "skill_coverage": skill_coverage
     }
 
 
-# ==================================================
-# 6. SIDEBAR
-# ==================================================
+# =========================================================
+# 7. THANH MENU BÊN TRÁI
+# =========================================================
 with st.sidebar:
-    st.markdown(
-        '<div class="brand">✦ CVision AI</div>'
-        '<div class="brand-sub">YOUR CAREER COMPANION</div>',
-        unsafe_allow_html=True
-    )
+    st.markdown("# 📄 CVision AI")
+    st.caption("Trợ lý phân tích CV bằng trí tuệ nhân tạo")
+    st.divider()
 
-    st.write("")
     page = st.radio(
-        "MENU",
-        ["✨ Phân tích CV", "📘 Hướng dẫn sử dụng"],
+        "MENU CHÍNH",
+        [
+            "Tổng quan",
+            "Phân tích CV",
+            "Hướng dẫn sử dụng",
+            "Giới thiệu"
+        ],
         label_visibility="visible"
     )
 
-    st.markdown("---")
+    st.divider()
+    st.markdown("**Công cụ hỗ trợ nghề nghiệp**")
+    st.caption("Tải CV · So sánh yêu cầu · Gợi ý cải thiện")
 
+
+# =========================================================
+# 8. TRANG TỔNG QUAN
+# =========================================================
+if page == "Tổng quan":
     st.markdown("""
-    <div class="side-note">
-        <b>✦ Career, but smarter.</b><br><br>
-        Phân tích hồ sơ ứng tuyển bằng AI,
-        tìm kỹ năng phù hợp và xác định
-        những điểm bạn có thể cải thiện.<br><br>
-        <b>AI-powered · Student-friendly</b>
+    <div class="hero">
+        <h1>Chào mừng đến với CVision AI ✨</h1>
+        <p>
+        Khám phá mức độ phù hợp giữa hồ sơ của bạn và vị trí tuyển dụng.
+        Nhận diện kỹ năng nổi bật, kỹ năng còn thiếu và gợi ý hoàn thiện CV.
+        </p>
     </div>
     """, unsafe_allow_html=True)
 
-    st.write("")
-    st.caption("CVision AI · MVP Edition")
+    col1, col2 = st.columns(2)
 
-
-# ==================================================
-# 7. HERO HEADER
-# ==================================================
-st.markdown("""
-<div class="hero">
-    <span class="pill">✦ YOUR CAREER, YOUR STORY</span>
-    <h1>Your next career move<br>starts here.</h1>
-    <p>
-        Biến CV của bạn thành lợi thế cạnh tranh.
-        Tải hồ sơ, chọn công việc mục tiêu và khám phá
-        mức độ tương đồng cùng những kỹ năng cần phát triển.
-    </p>
-    <span class="eyebrow">AI CAREER INSIGHTS · MADE FOR YOU</span>
-</div>
-""", unsafe_allow_html=True)
-
-
-# ==================================================
-# 8. GUIDE PAGE
-# ==================================================
-if page == "📘 Hướng dẫn sử dụng":
-    st.markdown(
-        '<div class="section-heading">Cách sử dụng CVision AI</div>',
-        unsafe_allow_html=True
-    )
-    st.markdown(
-        '<div class="section-caption">'
-        'Ba bước để bắt đầu hành trình ứng tuyển thông minh hơn.'
-        '</div>',
-        unsafe_allow_html=True
-    )
-
-    a, b, c = st.columns(3)
-
-    with a:
+    with col1:
         st.markdown("""
-        <div class="metric-card">
-            <div class="metric-icon">📄</div>
-            <h3>01. Upload</h3>
-            <p>Tải lên CV PDF có thể trích xuất văn bản.</p>
+        <div class="cv-card">
+            <h3>📑 Phân tích hồ sơ</h3>
+            <p>Tải CV định dạng PDF để trích xuất và phân tích nội dung.</p>
         </div>
         """, unsafe_allow_html=True)
 
-    with b:
+    with col2:
         st.markdown("""
-        <div class="metric-card">
-            <div class="metric-icon">💼</div>
-            <h3>02. Match</h3>
-            <p>Nhập mô tả công việc bạn muốn ứng tuyển.</p>
+        <div class="cv-card">
+            <h3>🎯 Đối chiếu tuyển dụng</h3>
+            <p>So sánh nội dung CV với mô tả công việc và xem các kỹ năng liên quan.</p>
         </div>
         """, unsafe_allow_html=True)
 
-    with c:
-        st.markdown("""
-        <div class="metric-card">
-            <div class="metric-icon">🚀</div>
-            <h3>03. Improve</h3>
-            <p>Xem báo cáo, đối chiếu kỹ năng và tìm điểm cần cải thiện.</p>
-        </div>
-        """, unsafe_allow_html=True)
+    st.info("Bắt đầu bằng cách chọn mục **Phân tích CV** ở menu bên trái.")
 
-    st.info(
-        "Lưu ý: CVision AI hỗ trợ tham khảo, không quyết định "
-        "khả năng trúng tuyển. Hệ thống hiện chưa đọc được "
-        "nội dung CV chỉ chứa hình ảnh scan."
+
+# =========================================================
+# 9. TRANG PHÂN TÍCH CV
+# =========================================================
+elif page == "Phân tích CV":
+    st.markdown("""
+    <div class="hero">
+        <h1>Phân tích mức độ phù hợp của CV 🔎</h1>
+        <p>Tải hồ sơ, nhập mô tả công việc và bắt đầu phân tích.</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.subheader("Bước 1. Tải lên CV")
+    uploaded_cv = st.file_uploader(
+        "Chọn tệp CV định dạng PDF",
+        type=["pdf"],
+        help="Tệp PDF cần chứa văn bản có thể chọn và sao chép."
     )
 
+    cv_text = ""
+    if uploaded_cv is not None:
+        cv_text = extract_pdf_text(uploaded_cv)
 
-# ==================================================
-# 9. ANALYSIS PAGE
-# ==================================================
-else:
-    st.markdown(
-        '<div class="section-heading">Let’s find your match ✨</div>',
-        unsafe_allow_html=True
+        if cv_text:
+            st.success("Đã đọc được nội dung CV.")
+            with st.expander("Xem nội dung CV đã trích xuất"):
+                st.text(cv_text[:10000])
+                if len(cv_text) > 10000:
+                    st.caption("Phần hiển thị đã được rút gọn.")
+
+    st.subheader("Bước 2. Nhập mô tả công việc")
+    job_text = st.text_area(
+        "Nội dung mô tả công việc",
+        height=220,
+        placeholder=(
+            "Ví dụ: Chúng tôi tuyển Marketing Intern. "
+            "Ứng viên cần có kỹ năng nghiên cứu thị trường, "
+            "Excel, giao tiếp, sáng tạo nội dung và làm việc nhóm..."
+        )
     )
-    st.markdown(
-        '<div class="section-caption">'
-        'Bắt đầu bằng CV của bạn và mô tả công việc mục tiêu.'
-        '</div>',
-        unsafe_allow_html=True
-    )
 
-    left, right = st.columns(2, gap="large")
-
-    with left:
-        with st.container(border=True):
-            st.markdown("### 📄 Your resume")
-            st.markdown(
-                '<div class="section-caption">'
-                'Tải hồ sơ ứng tuyển của bạn'
-                '</div>',
-                unsafe_allow_html=True
-            )
-
-            uploaded_cv = st.file_uploader(
-                "Chọn file CV (PDF)",
-                type=["pdf"],
-                help="Dùng PDF có văn bản, không phải ảnh scan."
-            )
-
-            if uploaded_cv:
-                st.success(
-                    f"✓ Đã tải: {uploaded_cv.name}"
-                )
-
-            st.markdown("""
-            <div class="mini-card">
-                <p>
-                <b>Quick tip 💡</b><br>
-                CV có cấu trúc rõ ràng và nội dung văn bản
-                sẽ giúp hệ thống phân tích tốt hơn.
-                </p>
-            </div>
-            """, unsafe_allow_html=True)
-
-    with right:
-        with st.container(border=True):
-            st.markdown("### 💼 Your dream role")
-            st.markdown(
-                '<div class="section-caption">'
-                'Bạn đang hướng đến công việc nào?'
-                '</div>',
-                unsafe_allow_html=True
-            )
-
-            job_title = st.text_input(
-                "Tên vị trí",
-                placeholder="VD: Marketing Intern"
-            )
-
-            job_description = st.text_area(
-                "Job description",
-                height=165,
-                placeholder=(
-                    "Dán mô tả công việc vào đây...\n\n"
-                    "Ví dụ: Yêu cầu Excel, SQL, phân tích dữ liệu..."
-                )
-            )
-
-            st.caption(
-                "Mẹo: Bao gồm trách nhiệm, kỹ năng và yêu cầu tuyển dụng."
-            )
-
-    st.write("")
+    st.caption("Bạn có thể sao chép mô tả tuyển dụng từ tin tuyển dụng thực tế.")
 
     analyze_button = st.button(
-        "✨ Analyze my CV",
+        "✨ Phân tích CV ngay",
         use_container_width=True
     )
 
     if analyze_button:
         if not uploaded_cv:
-            st.error("Bạn hãy tải CV PDF trước nhé.")
-            st.stop()
-
-        if len(job_description.strip()) < 30:
-            st.error(
-                "Vui lòng nhập mô tả công việc dài ít nhất 30 ký tự."
+            st.warning("Vui lòng tải lên CV định dạng PDF trước.")
+        elif not cv_text:
+            st.warning(
+                "Không trích xuất được văn bản từ CV. "
+                "Nếu PDF là ảnh quét, ứng dụng hiện chưa hỗ trợ OCR."
             )
-            st.stop()
+        elif not job_text.strip():
+            st.warning("Vui lòng nhập mô tả công việc.")
+        else:
+            try:
+                with st.spinner("AI đang phân tích CV, vui lòng chờ..."):
+                    model = load_model()
+                    result = analyze_cv(model, cv_text, job_text)
 
-        try:
-            with st.spinner(
-                "AI đang đọc hồ sơ và phân tích độ tương đồng..."
-            ):
-                cv_text = extract_pdf_text(uploaded_cv.getvalue())
+                st.session_state["cv_result"] = result
+                st.session_state["cv_job_text"] = job_text
+                st.session_state["cv_resume_text"] = cv_text
 
-                if len(cv_text) < 50:
-                    st.error(
-                        "Không đọc được đủ văn bản từ PDF. "
-                        "Hãy thử một file PDF có thể chọn và sao chép chữ."
-                    )
-                    st.stop()
-
-                result = analyze_match(
-                    cv_text, job_description
+            except Exception as error:
+                st.error(
+                    "Có lỗi khi tải mô hình hoặc phân tích dữ liệu. "
+                    "Vui lòng thử lại sau."
                 )
 
-            st.session_state["analysis_result"] = result
-            st.session_state["job_title"] = (
-                job_title.strip() or "Vị trí chưa đặt tên"
-            )
-            st.session_state["cv_filename"] = uploaded_cv.name
+    # Hiển thị kết quả đã phân tích
+    if "cv_result" in st.session_state:
+        result = st.session_state["cv_result"]
 
-        except Exception as error:
-            st.error(
-                "Phân tích chưa thành công. "
-                "Hãy kiểm tra kết nối và nhật ký ứng dụng."
-            )
-            st.code(str(error))
-
-    # Render saved result after Streamlit reruns
-    if "analysis_result" in st.session_state:
-        result = st.session_state["analysis_result"]
-
-        st.write("")
-        st.markdown("---")
-
-        st.markdown(
-            '<div class="section-heading">'
-            'Your career insights ✨'
-            '</div>',
-            unsafe_allow_html=True
-        )
-        st.markdown(
-            '<div class="section-caption">'
-            'Báo cáo phân tích dựa trên CV và mô tả công việc đã nhập.'
-            '</div>',
-            unsafe_allow_html=True
-        )
+        st.divider()
+        st.header("📊 Kết quả phân tích")
 
         st.caption(
-            f"CV: {st.session_state['cv_filename']} · "
-            f"Role: {st.session_state['job_title']}"
+            "Điểm tham khảo dựa trên độ tương đồng ngữ nghĩa giữa CV "
+            "và mô tả công việc; không phải xác suất được tuyển dụng."
         )
 
-        m1, m2, m3 = st.columns(3)
+        metric1, metric2, metric3 = st.columns(3)
 
-        with m1:
-            st.markdown(f"""
-            <div class="metric-card">
-                <div class="metric-icon">🎯</div>
-                <div class="metric-label">SEMANTIC SIMILARITY</div>
-                <div class="metric-value">{result['score']}<span style="font-size:15px">/100</span></div>
-            </div>
-            """, unsafe_allow_html=True)
+        with metric1:
+            st.metric("Điểm phù hợp", f"{result['score']}/100")
 
-        with m2:
-            st.markdown(f"""
-            <div class="metric-card">
-                <div class="metric-icon">🌱</div>
-                <div class="metric-label">MATCHED SKILLS</div>
-                <div class="metric-value">{len(result['matched'])}</div>
-            </div>
-            """, unsafe_allow_html=True)
+        with metric2:
+            st.metric("Kỹ năng phù hợp", len(result["matched"]))
 
-        with m3:
-            st.markdown(f"""
-            <div class="metric-card">
-                <div class="metric-icon">💡</div>
-                <div class="metric-label">SKILLS TO REVIEW</div>
-                <div class="metric-value">{len(result['missing'])}</div>
-            </div>
-            """, unsafe_allow_html=True)
+        with metric3:
+            st.metric("Kỹ năng còn thiếu", len(result["missing"]))
 
-        st.info(
-            "Điểm tương đồng là mức độ gần nhau giữa biểu diễn "
-            "ngữ nghĩa của CV và mô tả công việc, không phải "
-            "xác suất trúng tuyển."
+        # Biểu đồ điểm phù hợp
+        fig = go.Figure(
+            go.Indicator(
+                mode="gauge+number",
+                value=result["score"],
+                number={"suffix": "/100"},
+                title={"text": "Mức độ tương đồng ngữ nghĩa"},
+                gauge={
+                    "axis": {"range": [0, 100]},
+                    "bar": {"color": "#8272D8"},
+                    "bgcolor": "#F0EDFF",
+                    "borderwidth": 0,
+                    "steps": [
+                        {"range": [0, 40], "color": "#FFE5E1"},
+                        {"range": [40, 70], "color": "#FFF0D7"},
+                        {"range": [70, 100], "color": "#DDF7E9"}
+                    ]
+                }
+            )
         )
 
-        tab1, tab2, tab3 = st.tabs([
-            "🌿 Skill match",
-            "📊 Analytics",
-            "🚀 Improvement tips"
-        ])
+        fig.update_layout(
+            height=300,
+            margin=dict(l=20, r=20, t=55, b=10),
+            paper_bgcolor="rgba(0,0,0,0)",
+            font={"color": "#303653"}
+        )
 
-        with tab1:
-            good, gap = st.columns(2)
+        st.plotly_chart(fig, use_container_width=True)
 
-            with good:
-                st.markdown("### 🌿 Skills found in both")
+        st.subheader("✅ Kỹ năng phù hợp")
 
-                if result["matched"]:
-                    tags = "".join(
-                        f'<span class="skill-tag">✓ {skill}</span>'
-                        for skill in result["matched"]
-                    )
-                    st.markdown(tags, unsafe_allow_html=True)
-                else:
-                    st.write(
-                        "Chưa tìm thấy kỹ năng trùng khớp "
-                        "theo bộ từ khóa hiện tại."
-                    )
-
-            with gap:
-                st.markdown("### 🧡 Skills to review")
-
-                if result["missing"]:
-                    tags = "".join(
-                        f'<span class="missing-tag">＋ {skill}</span>'
-                        for skill in result["missing"]
-                    )
-                    st.markdown(tags, unsafe_allow_html=True)
-                elif result["job_skills"]:
-                    st.success(
-                        "Đã nhận diện các kỹ năng yêu cầu "
-                        "trong bộ từ khóa của hệ thống."
-                    )
-                else:
-                    st.write(
-                        "Chưa phát hiện kỹ năng từ mô tả công việc. "
-                        "Thử ghi rõ tên kỹ năng."
-                    )
-
-            st.markdown("### 📝 Skills detected in your CV")
-            if result["cv_skills"]:
-                st.write(", ".join(result["cv_skills"]))
-            else:
-                st.write(
-                    "Chưa nhận diện được kỹ năng theo bộ từ khóa."
-                )
-
-            st.markdown("### 🔎 Skills detected in the job description")
-            if result["job_skills"]:
-                st.write(", ".join(result["job_skills"]))
-            else:
-                st.write("Chưa nhận diện được kỹ năng.")
-
-        with tab2:
-            labels = ["Độ tương đồng ngữ nghĩa"]
-            values = [result["score"]]
-            colors = ["#7967E8"]
-
-            if result["coverage"] is not None:
-                labels.append("Độ bao phủ kỹ năng")
-                values.append(result["coverage"])
-                colors.append("#52BFA1")
-
-            fig = go.Figure(
-                go.Bar(
-                    x=values,
-                    y=labels,
-                    orientation="h",
-                    text=[f"{value}%" for value in values],
-                    textposition="auto",
-                    marker_color=colors,
-                    marker_line_width=0,
-                )
+        if result["matched"]:
+            matched_html = "".join(
+                f'<span class="skill-good">{html.escape(skill)}</span>'
+                for skill in result["matched"]
+            )
+            st.markdown(matched_html, unsafe_allow_html=True)
+        else:
+            st.write(
+                "Chưa phát hiện kỹ năng trùng khớp trong danh sách từ khóa "
+                "được hỗ trợ. Điều này không đồng nghĩa CV hoàn toàn không có kỹ năng phù hợp."
             )
 
-            fig.update_layout(
-                paper_bgcolor="rgba(0,0,0,0)",
-                plot_bgcolor="rgba(0,0,0,0)",
-                font=dict(
-                    family="DM Sans",
-                    color="#45415F"
-                ),
-                xaxis=dict(
-                    title="Điểm (%)",
-                    range=[0, 100],
-                    showgrid=True,
-                    gridcolor="#EEEAF7"
-                ),
-                yaxis=dict(
-                    title="",
-                    autorange="reversed"
-                ),
-                height=250,
-                margin=dict(l=10, r=20, t=20, b=35),
-                showlegend=False,
+        st.subheader("📌 Kỹ năng cần bổ sung hoặc làm rõ")
+
+        if result["missing"]:
+            missing_html = "".join(
+                f'<span class="skill-missing">{html.escape(skill)}</span>'
+                for skill in result["missing"]
+            )
+            st.markdown(missing_html, unsafe_allow_html=True)
+            st.write(
+                "Nếu bạn thực sự có các kỹ năng này, hãy bổ sung minh chứng "
+                "cụ thể vào CV. Không nên ghi kỹ năng mà bạn chưa có."
+            )
+        else:
+            st.success(
+                "Không phát hiện kỹ năng nào còn thiếu trong danh sách từ khóa "
+                "mà ứng dụng nhận diện."
             )
 
-            st.plotly_chart(
-                fig, use_container_width=True
-            )
+        st.subheader("💡 Gợi ý cải thiện CV")
 
-            st.markdown("""
-            <div class="mini-card">
-                <p>
-                <b>How to read this chart</b><br>
-                Semantic similarity đo độ tương đồng ngữ nghĩa giữa
-                CV và mô tả công việc. Skill coverage đo tỷ lệ kỹ năng
-                yêu cầu được tìm thấy trong CV theo bộ từ khóa.
-                Hai chỉ số có cách tính khác nhau.
-                </p>
-            </div>
-            """, unsafe_allow_html=True)
+        suggestions = []
 
-            if result["coverage"] is not None:
-                st.metric(
-                    "Skill coverage",
-                    f"{result['coverage']}%"
-                )
-            else:
-                st.caption(
-                    "Chưa tính được skill coverage vì chưa phát hiện "
-                    "kỹ năng trong mô tả công việc."
-                )
-
-        with tab3:
-            suggestions = []
-
-            if result["missing"]:
-                suggestions.append(
-                    "Xem lại các kỹ năng còn thiếu. Chỉ bổ sung vào CV "
-                    "nếu bạn thực sự có kiến thức hoặc kinh nghiệm đó."
-                )
-                suggestions.append(
-                    "Nếu đã có kinh nghiệm liên quan, hãy trình bày "
-                    "qua dự án, nhiệm vụ và kết quả cụ thể."
-                )
-
-            if result["score"] < 50:
-                suggestions.append(
-                    "Làm rõ các kinh nghiệm liên quan đến vị trí. "
-                    "Điểm tương đồng thấp không đồng nghĩa bạn "
-                    "không đủ năng lực."
-                )
-
+        if result["missing"]:
             suggestions.append(
-                "Ưu tiên nêu bật các dự án, kỹ năng và thành tích "
-                "liên quan trực tiếp đến công việc."
-            )
-            suggestions.append(
-                "Kiểm tra thông tin liên hệ, học vấn, lỗi chính tả "
-                "và bố cục trước khi gửi CV."
+                "Xem lại các kỹ năng còn thiếu ở trên. Chỉ bổ sung những kỹ năng "
+                "bạn thực sự có và đưa ra minh chứng bằng dự án, môn học hoặc kinh nghiệm."
             )
 
-            for i, suggestion in enumerate(suggestions, 1):
-                st.markdown(
-                    f"""
-                    <div class="mini-card">
-                        <b style="color:#6552D4">STEP {i:02d}</b>
-                        <p>{suggestion}</p>
-                    </div>
-                    """,
-                    unsafe_allow_html=True
-                )
+        if result["score"] < 50:
+            suggestions.append(
+                "Đọc lại mô tả công việc và làm rõ những kinh nghiệm, dự án "
+                "và thành tích liên quan trực tiếp đến vị trí ứng tuyển."
+            )
+        elif result["score"] < 75:
+            suggestions.append(
+                "Tăng mức độ liên quan bằng cách mô tả rõ vai trò, công cụ đã dùng "
+                "và kết quả đạt được trong các dự án hoặc công việc."
+            )
+        else:
+            suggestions.append(
+                "Tiếp tục kiểm tra tính chính xác của thông tin, thành tích "
+                "và mức độ phù hợp của kinh nghiệm với yêu cầu tuyển dụng."
+            )
+
+        suggestions.append(
+            "Ưu tiên các thành tích có số liệu cụ thể khi có căn cứ, "
+            "chẳng hạn thời gian tiết kiệm, doanh số hoặc quy mô dự án."
+        )
+
+        for suggestion in suggestions:
+            st.markdown(f"- {suggestion}")
+
+        if result["skill_coverage"] is not None:
+            st.subheader("📈 Mức độ bao phủ kỹ năng")
+
+            st.progress(result["skill_coverage"] / 100)
+
+            st.write(
+                f"CV có {len(result['matched'])}/{len(result['job_skills'])} "
+                f"kỹ năng được nhận diện trong mô tả công việc "
+                f"({result['skill_coverage']}%)."
+            )
 
         st.caption(
-            "CVision AI là công cụ hỗ trợ tham khảo. Bộ từ khóa "
-            "có thể bỏ sót kỹ năng được diễn đạt theo cách khác. "
-            "Không dùng điểm số để tự động loại ứng viên."
+            "Lưu ý: Công cụ chỉ hỗ trợ tham khảo. Điểm ngữ nghĩa và từ khóa "
+            "có thể chưa phản ánh đầy đủ năng lực thực tế của ứng viên."
         )
 
 
-# ==================================================
-# 10. FOOTER
-# ==================================================
-st.markdown("""
-<div class="footer">
-    ✦ CVision AI · Your Career Companion<br>
-    AI-powered career insights for a brighter future.
-</div>
-""", unsafe_allow_html=True)
+# =========================================================
+# 10. TRANG HƯỚNG DẪN SỬ DỤNG
+# =========================================================
+elif page == "Hướng dẫn sử dụng":
+    st.title("📘 Hướng dẫn sử dụng CVision AI")
+
+    st.markdown("""
+    ### Bước 1. Chuẩn bị CV
+    - Sử dụng tệp PDF có thể chọn và sao chép văn bản.
+    - Kiểm tra thông tin liên hệ, học vấn, kỹ năng và kinh nghiệm.
+
+    ### Bước 2. Chuẩn bị mô tả công việc
+    - Sao chép nội dung từ tin tuyển dụng.
+    - Giữ lại các yêu cầu chính về kỹ năng và kinh nghiệm.
+
+    ### Bước 3. Chạy phân tích
+    - Mở mục **Phân tích CV**.
+    - Tải CV và nhập mô tả công việc.
+    - Nhấn **Phân tích CV ngay**.
+
+    ### Bước 4. Đọc kết quả
+    - **Điểm phù hợp:** mức tương đồng ngữ nghĩa tham khảo giữa hai nội dung.
+    - **Kỹ năng phù hợp:** các kỹ năng ứng dụng nhận diện được ở cả hai bên.
+    - **Kỹ năng còn thiếu:** các kỹ năng có trong mô tả công việc nhưng chưa được phát hiện trong CV.
+    - **Gợi ý cải thiện:** các đề xuất giúp trình bày CV rõ ràng và sát vị trí ứng tuyển hơn.
+
+    ### Lưu ý
+    - Phiên bản hiện tại xử lý PDF có văn bản, chưa tích hợp OCR cho PDF chỉ chứa ảnh.
+    - Việc nhận diện kỹ năng dựa trên danh sách từ khóa được lập trình sẵn.
+    - Điểm phù hợp không phải xác suất trúng tuyển và không thay thế đánh giá của nhà tuyển dụng.
+    """)
+
+
+# =========================================================
+# 11. TRANG GIỚI THIỆU
+# =========================================================
+elif page == "Giới thiệu":
+    st.markdown("""
+    <div class="hero">
+        <h1>Về CVision AI</h1>
+        <p>Công cụ hỗ trợ ứng viên hiểu rõ hơn mức độ phù hợp giữa CV và vị trí tuyển dụng.</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown("""
+    ### 🎯 Mục tiêu
+    Hỗ trợ phân tích nội dung hồ sơ, đối chiếu yêu cầu tuyển dụng và xác định
+    những điểm ứng viên nên xem xét cải thiện.
+
+    ### 🧠 Công nghệ sử dụng
+    - **Sentence Transformers:** biểu diễn văn bản thành vector để so sánh ngữ nghĩa.
+    - **Cosine Similarity:** tính độ tương đồng giữa CV và mô tả công việc.
+    - **PyMuPDF:** trích xuất văn bản từ tệp PDF.
+    - **Scikit-learn:** hỗ trợ tính toán độ tương đồng.
+    - **Plotly:** hiển thị biểu đồ kết quả.
+    - **Streamlit:** xây dựng giao diện ứng dụng web.
+
+    ### 🔒 Quyền riêng tư
+    Chỉ tải lên CV mà bạn có quyền sử dụng. Tránh đưa thông tin cá nhân nhạy cảm
+    vào các bản CV thử nghiệm công khai.
+    """)
+
+st.divider()
+st.markdown(
+    '<p class="small-note" style="text-align:center">'
+    'CVision AI · Công cụ hỗ trợ phân tích hồ sơ ứng tuyển'
+    '</p>',
+    unsafe_allow_html=True
+)
