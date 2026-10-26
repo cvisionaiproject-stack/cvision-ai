@@ -4,5 +4,6 @@ pymupdf
 sentence-transformers
 scikit-learn
 plotly
+reportlab
 pytesseract
 Pillow
